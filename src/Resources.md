@@ -2,7 +2,7 @@
 
 ## Documentation
 
-- [Official documentation](ihttps://mirage.github.io/irmin/)
+- [Official documentation](https://mirage.github.io/irmin/)
 - [Easy distributed analytics with Irmin 1.0](https://mirage.io/blog/irmin-1.0)
 
 ## Related projects
