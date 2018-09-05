@@ -227,9 +227,9 @@ end
 
 ## LWW register
 
-Our last-write-wins register is similar to a normal key-value store, but on merge the newest value will be picked.
+A last-write-wins register is similar to a basic Irmin store, except on merge the most recently written value will be picked rather than trying to merge the values.
 
-First, this requires a way to get the current time - we will make this as generic as possible so it can be used on unix or MirageOS:
+First, this requires a way to get a timestamp - we will make this as generic as possible so it can be used on unix or MirageOS:
 
 ```ocaml
 module type TIMESTAMP = sig
@@ -252,8 +252,6 @@ module Lww_register (Time: TIMESTAMP) (C: Irmin.Contents.Conv) = struct
     let t =
         Irmin.Type.(pair C.t int64)
 ```
-
-
 A convenience function for adding a timestamp to [C.t] value:
 
 ```ocaml
@@ -269,7 +267,7 @@ The same `pp` and `to_string` implementations as the previous examples:
         Irmin.Type.decode_json t decoder
 ```
 
-The merge operation for `Lww_register` is slight different than the ones covered so far. It will no attempt to merge any values, instead it will pick the newest value.
+The merge operation for `Lww_register` is slightly different than the ones covered so far. It will not attempt to merge any values, instead it will pick the newest value based on the attached timestamp.
 
 ```ocaml
     let merge ~old (a, timestamp_a) (b, timestamp_b) =
@@ -278,7 +276,8 @@ The merge operation for `Lww_register` is slight different than the ones covered
             if Irmin.Type.equal C.t a b then
                 Irmin.Merge.ok (a, timestamp_a)
             else
-                Irmin.Merge.conflict "Conflicting entries have the same timestamp but different values"
+                let msg = "Conflicting entries have the same timestamp but different values" in
+                Irmin.Merge.conflict "%s" msg
         | 1 -> Irmin.Merge.ok (a, timestamp_a)
         | _ -> Irmin.Merge.ok (b, timestamp_b)
     let merge = Irmin.Merge.(option (v t merge))
@@ -292,13 +291,20 @@ open Lwt.Infix
 module Value = Lww_register(Timestamp)(Irmin.Contents.String)
 module Store = Irmin_mem.KV(Value)
 let main =
+    (* Configure the repo *)
     let cfg = Irmin_mem.config () in
+    (* Access the master branch *)
     Store.Repo.v cfg >>= Store.master >>= fun master ->
+    (* Set [foo] to ["bar"] on master branch *)
     Store.set master ["foo"] (Value.v "bar") ~info:(Irmin_unix.info "set foo on master branch") >>= fun () ->
+    (* Access example branch *)
     Store.Repo.v cfg >>= fun repo -> Store.of_branch repo "example" >>= fun example ->
+    (* Set [foo] to ["baz"] on example branch *)
     Store.set example ["foo"] (Value.v "baz") ~info:(Irmin_unix.info "set foo on example branch") >>= fun () ->
+    (* Merge the example into master branch *)
     Store.merge ~into:master example ~info:(Irmin_unix.info "merge example into master") >>= function
     | Ok () ->
+        (* Check that [foo] is set to ["baz"] after the merge *)
         Store.get master ["foo"] >|= fun (foo, _) ->
         assert (foo = "baz")
     | Error conflict ->
@@ -307,4 +313,4 @@ let main =
 let () = Lwt_main.run main
 ```
 
-f you want another example then check out the [custom merge](https://github.com/mirage/irmin/blob/master/examples/custom_merge.ml) example in the Irmin repository, which illustrates how to write a mergeable log.
+If you'd like another example then check out the [custom merge](https://github.com/mirage/irmin/blob/master/examples/custom_merge.ml) example in the Irmin repository, which illustrates how to write a mergeable log.
