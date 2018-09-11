@@ -6,10 +6,10 @@ This section will explain how custom datatypes can be implemented using [Irmin.T
 
 Now that you've read through the documentation, let's create some contents by defining the functions required by the [Irmin.Contents.S](https://docs.mirage.io/irmin/Irmin/Contents/module-type-S/index.html) interface. This section will walk you through a few different examples:
 
-- [Counter](#counter)
-- [Record](#record)
-- [Association list](#association-list)
-- [LWW register](#lww-register)
+- [Counter](#Counter)
+- [Record](#Record)
+- [Association list](#Association-list)
+- [LWW register](#LWW-register)
 
 ## Overview
 

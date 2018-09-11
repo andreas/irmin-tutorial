@@ -1,5 +1,6 @@
 book
 book.ml
 _build
-book.native
+*.native
 *.corrected
+out

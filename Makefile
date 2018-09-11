@@ -26,8 +26,11 @@ publish: check
 	git -C .gh-pages reset
 	git -C .gh-pages clean -dxf
 	cp -r book/* .gh-pages/
-	#echo dev.realworldocaml.org > .gh-pages/CNAME
 	git -C .gh-pages add .
 	git -C .gh-pages commit -m "Update Pages"
 	git -C .gh-pages push origin gh-pages -f
 	rm -rf .gh-pages
+
+generate:
+	ocamlbuild -pkg omd -pkg str gen/build.native
+	./build.native
