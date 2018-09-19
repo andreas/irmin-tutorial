@@ -154,12 +154,13 @@ end
 Now some examples using `Car` -- we will map Vehicle Identification Number to a car record, this could be used by a tow company or an auto shop to identify cars:
 
 ```ocaml
+open Lwt.Infix
 module Car_store = Irmin_mem.KV(Car)
 
 let car_a = {
     color = Other "green";
     license = "ABCD123";
-    year = 2002;
+    year = 2002l;
     make_and_model = ("Honda", "Accord");
     owner = "Jane Doe";
 }
@@ -167,24 +168,25 @@ let car_a = {
 let car_b = {
     color = Black;
     license = "MYCAR00";
-    year = "2016";
+    year = 2016l;
     make_and_model = ("Toyota", "Corolla");
     owner = "Mike Jones";
 }
 
 let add_car store car_number car =
-    Car_store.set store [car_number] car
+    let info = Irmin_unix.info "added %s" car_number in
+    Car_store.set store [car_number] car ~info
 
 let main =
     let config = Irmin_mem.config () in
     Car_store.Repo.v config >>= Car_store.master >>= fun t ->
     add_car t "5Y2SR67049Z456146" car_a >>= fun () ->
     add_car t "2FAFP71W65X110910" car_b >>= fun () ->
-    Car_store.get t "2FAFP71W65X110910" >|= fun car ->
+    Car_store.get t ["2FAFP71W65X110910"] >|= fun car ->
     assert (car.license = car_a.license);
     assert (car.year = car_a.year)
 
-let () = Lwt.run main
+let () = Lwt_main.run main
 ```
 
 ## Association list

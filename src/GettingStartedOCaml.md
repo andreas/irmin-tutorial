@@ -84,7 +84,7 @@ let branch config name =
 Now you can begin to interact with the store using `get` and `set`.
 
 ```ocaml
-let info message = Irmin_unix.info ~author:"Example" "%s"
+let info message = Irmin_unix.info ~author:"Example" "%s" message
 
 let main =
     Mem_store.Repo.v config >>= Mem_store.master >>= fun t ->

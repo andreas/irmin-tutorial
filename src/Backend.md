@@ -95,27 +95,6 @@ This module needs an `add` function, which takes a value, hashes it, stores the 
 end
 ```
 
-### The link store
-
-The [Link](https://mirage.github.io/irmin/irmin/Irmin/module-type-LINK/index.html) store creates verified links between low-level keys. The link store doesn't know about the type of value you're storing, it is only interesting in creating linking keys together.
-
-```ocaml
-module Link (K: Irmin.Hash.S) = struct
-  include RO(K)(K)
-  let v = v "link"
-```
-
-This `add` function is different from the append-only store implementation. It takes two key arguments (`index` and `key`) and stores the association from `index` to `key`:
-
-```ocaml
-  let add (prefix, client) index key =
-      let key = Fmt.to_to_string K.pp key in
-      let index = Fmt.to_to_string K.pp index in
-      ignore (Client.run client [| "SET"; prefix ^ index; key |]);
-      Lwt.return_unit
-end
-```
-
 ## The read-write store
 
 The [RW](https://mirage.github.io/irmin/irmin/Irmin/module-type-RW/index.html) store has many more types and values that need to be defined than the previous examples, but luckily this is the last step!
@@ -255,7 +234,7 @@ Finally, add `Make` and `KV` functors for creating Redis-backed Irmin stores:
 ```ocaml
 module Make = Irmin.Make(AO)(RW)
 
-module KV (C: Irmin.Contents.S) : Irmin.KV_MAKER =
+module KV (C: Irmin.Contents.S) =
   Make
     (Irmin.Metadata.None)
     (C)
