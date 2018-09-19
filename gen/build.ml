@@ -28,6 +28,11 @@ type entry = {
   page: string;
 }
 
+let fix_filename s =
+  match s with
+  | "Introduction.html" -> "index.html"
+  | s -> s
+
 let generate_nav_links entries current =
   List.mapi (fun i entry ->
     let c =
@@ -57,7 +62,7 @@ let _ =
     let line = !line in
     let title = item_title line in
     let input_filename = item_file line in
-    let output_filename = replace "md" "html"  input_filename in
+    let output_filename = replace "md" "html"  input_filename |> fix_filename in
     let page = read_file (Filename.concat "src" input_filename) in
     let page = Omd.of_string page |> Omd.to_html in
     let page = replace "<!-- CONTENT -->" page template in
