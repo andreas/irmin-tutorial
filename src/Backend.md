@@ -232,9 +232,9 @@ end
 Finally, add `Make` and `KV` functors for creating Redis-backed Irmin stores:
 
 ```ocaml
-module Make = Irmin.Make(AO)(RW)
+module Make: Irmin.S_MAKER = Irmin.Make(AO)(RW)
 
-module KV (C: Irmin.Contents.S) =
+module KV: Irmin.KV_MAKER = functor (C: Irmin.Contents.S) ->
   Make
     (Irmin.Metadata.None)
     (C)
