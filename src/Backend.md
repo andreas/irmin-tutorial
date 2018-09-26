@@ -24,7 +24,7 @@ open Hiredis
 ```
 
 ```ocaml
-module RO (K: Irmin.Contents.Conv) (V: Irmin.Contents.Conv) = struct
+module RO (K: Irmin.Type.S) (V: Irmin.Type.S) = struct
   type t = (string * Client.t) (* Store type: Redis prefix and client *)
   type key = K.t               (* Key type *)
   type value = V.t             (* Value type *)
@@ -53,7 +53,7 @@ Since an Irmin database requires a few levels of store types (links, objects, et
 
 ```ocaml
   let mem (prefix, client) key =
-      let key = Fmt.to_to_string K.pp key in
+      let key = Irmin.Type.to_string K.t key in
       match Client.run client [| "EXISTS"; prefix ^ key |] with
       | Integer 1L -> Lwt.return_true
       | _ -> Lwt.return_false
@@ -63,10 +63,10 @@ Since an Irmin database requires a few levels of store types (links, objects, et
 
 ```ocaml
   let find (prefix, client) key =
-      let key = Fmt.to_to_string K.pp key in
+      let key = Irmin.Type.to_string K.t key in
       match Client.run client [| "GET"; prefix ^ key |] with
       | String s ->
-          (match V.of_string s with
+          (match Irmin.Type.of_string V.t s with
           | Ok s -> Lwt.return_some s
           | _ -> Lwt.return_none)
       | _ -> Lwt.return_none
@@ -78,7 +78,7 @@ end
 Next is the append-only ([AO](https://mirage.github.io/irmin/irmin/Irmin/module-type-AO/index.html)) interface - the majority of the required methods can be inherited from `RO`!
 
 ```ocaml
-module AO (K: Irmin.Hash.S) (V: Irmin.Contents.Conv) = struct
+module AO (K: Irmin.Hash.S) (V: Irmin.Type.S) = struct
   include RO(K)(V)
   let v = v "obj"
 ```
@@ -87,9 +87,9 @@ This module needs an `add` function, which takes a value, hashes it, stores the 
 
 ```ocaml
   let add (prefix, client) value =
-      let hash = K.digest V.t value in
-      let key = Fmt.to_to_string K.pp hash in
-      let value = Fmt.to_to_string V.pp value in
+      let hash = K.digest (Irmin.Type.to_string V.t value) in
+      let key = Irmin.Type.to_string K.t hash in
+      let value = Irmin.Type.to_string V.t value in
       ignore (Client.run client [| "SET"; prefix ^ key; value |]);
       Lwt.return hash
 end
@@ -102,7 +102,7 @@ The [RW](https://mirage.github.io/irmin/irmin/Irmin/module-type-RW/index.html) s
 To start off we can use the `RO` functor defined above to create a `RO` module:
 
 ```ocaml
-module RW (K: Irmin.Contents.Conv) (V: Irmin.Contents.Conv) = struct
+module RW (K: Irmin.Type.S) (V: Irmin.Type.S) = struct
   module RO = RO(K)(V)
 ```
 
@@ -159,7 +159,7 @@ The `list` implementation will get a list of keys from Redis using the `KEYS` co
       match Client.run client [| "KEYS"; prefix ^ "*" |] with
       | Array arr ->
           Array.map (fun k ->
-            K.of_string (Value.to_string k)
+            Irmin.Type.of_string K.t (Value.to_string k)
           ) arr
           |> Array.to_list
           |> Lwt_list.filter_map_s (function
@@ -172,8 +172,8 @@ The `list` implementation will get a list of keys from Redis using the `KEYS` co
 
 ```ocaml
   let set {t = (prefix, client); w} key value =
-      let key' = Fmt.to_to_string K.pp key in
-      let value' = Fmt.to_to_string V.pp value in
+      let key' = Irmin.Type.to_string K.t key in
+      let value' = Irmin.Type.to_string V.t value in
       match Client.run client [| "SET"; prefix ^ key'; value' |] with
       | Status "OK" -> W.notify w key (Some value)
       | _ -> Lwt.return_unit
@@ -183,7 +183,7 @@ The `list` implementation will get a list of keys from Redis using the `KEYS` co
 
 ```ocaml
   let remove {t = (prefix, client); w} key =
-      let key' = Fmt.to_to_string K.pp key in
+      let key' = Irmin.Type.to_string K.t key in
       ignore (Client.run client [| "DEL"; prefix ^ key' |]);
       W.notify w key None
 ```
@@ -199,7 +199,7 @@ The `list` implementation will get a list of keys from Redis using the `KEYS` co
       Client.run client [| "EXEC" |] <> Nil
     in
     let prefix, client = t.t in
-    let key' = Fmt.to_to_string K.pp key in
+    let key' = Irmin.Type.to_string K.t key in
     (* Start watching the key in question *)
     ignore @@ Client.run client [| "WATCH"; prefix ^ key' |];
     (* Get the existing value *)
@@ -214,7 +214,7 @@ The `list` implementation will get a list of keys from Redis using the `KEYS` co
             else
               Lwt.return_false
         | Some value -> (* Update the key *)
-            let value' = Fmt.to_to_string V.pp value in
+            let value' = Irmin.Type.to_string V.t value in
             if txn client [| "SET"; prefix ^ key'; value' |] then
               W.notify t.w key set_value >>= fun () ->
               Lwt.return_true

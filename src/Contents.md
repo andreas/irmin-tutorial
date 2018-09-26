@@ -249,7 +249,7 @@ end
 `Lww_register` will be defined a functor that wraps an exsiting content type:
 
 ```ocaml
-module Lww_register (Time: TIMESTAMP) (C: Irmin.Contents.Conv) = struct
+module Lww_register (Time: TIMESTAMP) (C: Irmin.Type.S) = struct
     type t = C.t * int64
     let t =
         Irmin.Type.(pair C.t int64)

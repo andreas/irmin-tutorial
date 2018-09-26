@@ -149,7 +149,7 @@ For example, you can pull a repo and list the files in the root of the project:
 open Irmin_unix
 module Git_mem_store = Git.Mem.KV(Irmin.Contents.String)
 module Sync = Irmin.Sync(Git_mem_store)
-let remote = Irmin.remote_uri "git://github.com/mirage/irmin.git"
+let remote = Git_mem_store.remote "git://github.com/mirage/irmin.git"
 let main =
     Git_mem_store.Repo.v config >>= Git_mem_store.master >>= fun t ->
     Sync.pull_exn t remote `Set >>= fun () ->
