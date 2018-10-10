@@ -62,6 +62,18 @@ content: string
 
 See the output of `irmin help irmin.yml` for a list of configurable parameters.
 
+
+## Starting a GraphQL server
+
+`irmin` comes with a built-in [GraphQL](https://graphql.org) server, which can be used to easily query/modify a store remotely:
+
+```shell
+$ irmin graphql --port 8080
+```
+
+Then visit [http://localhost:8080/graphql](http://localhost:8080/graphql) for an interactive environment for writing GraphQL queries. Of course, you're also free to use your GraphQL client of choice!
+
+
 ## Snapshot/revert
 
 To get a reference to the current state of the database:
