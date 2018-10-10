@@ -42,7 +42,7 @@ Since an Irmin database requires a few levels of store types (links, objects, et
 ```ocaml
   let v prefix config =
     let module C = Irmin.Private.Conf in
-    let root = match C.get config Irmin.Private.Conf.root with
+    let root = match C.get config C.root with
       | Some root -> root ^ ":" ^ prefix ^ ":"
       | None -> prefix ^ ":"
     in
