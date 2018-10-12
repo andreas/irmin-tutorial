@@ -175,7 +175,7 @@ let car_b = {
 
 let add_car store car_number car =
     let info = Irmin_unix.info "added %s" car_number in
-    Car_store.set store [car_number] car ~info
+    Car_store.set_exn store [car_number] car ~info
 
 let main =
     let config = Irmin_mem.config () in
@@ -183,8 +183,8 @@ let main =
     add_car t "5Y2SR67049Z456146" car_a >>= fun () ->
     add_car t "2FAFP71W65X110910" car_b >>= fun () ->
     Car_store.get t ["2FAFP71W65X110910"] >|= fun car ->
-    assert (car.license = car_a.license);
-    assert (car.year = car_a.year)
+    assert (car.license = car_b.license);
+    assert (car.year = car_b.year)
 
 let () = Lwt_main.run main
 ```
@@ -298,13 +298,13 @@ let main =
     (* Access the master branch *)
     Store.Repo.v cfg >>= Store.master >>= fun master ->
     (* Set [foo] to ["bar"] on master branch *)
-    Store.set master ["foo"] (Value.v "bar") ~info:(Irmin_unix.info "set foo on master branch") >>= fun () ->
+    Store.set_exn master ["foo"] (Value.v "bar") ~info:(Irmin_unix.info "set foo on master branch") >>= fun () ->
     (* Access example branch *)
     Store.Repo.v cfg >>= fun repo -> Store.of_branch repo "example" >>= fun example ->
     (* Set [foo] to ["baz"] on example branch *)
-    Store.set example ["foo"] (Value.v "baz") ~info:(Irmin_unix.info "set foo on example branch") >>= fun () ->
+    Store.set_exn example ["foo"] (Value.v "baz") ~info:(Irmin_unix.info "set foo on example branch") >>= fun () ->
     (* Merge the example into master branch *)
-    Store.merge ~into:master example ~info:(Irmin_unix.info "merge example into master") >>= function
+    Store.merge_into ~into:master example ~info:(Irmin_unix.info "merge example into master") >>= function
     | Ok () ->
         (* Check that [foo] is set to ["baz"] after the merge *)
         Store.get master ["foo"] >|= fun (foo, _) ->

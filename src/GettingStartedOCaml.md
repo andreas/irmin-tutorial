@@ -89,7 +89,7 @@ let info message = Irmin_unix.info ~author:"Example" "%s" message
 let main =
     Mem_store.Repo.v config >>= Mem_store.master >>= fun t ->
     (* Set a/b/c to "Hello, Irmin!" *)
-    Mem_store.set t ["a"; "b"; "c"] "Hello, Irmin!" ~info:(info "my first commit") >>= fun () ->
+    Mem_store.set_exn t ["a"; "b"; "c"] "Hello, Irmin!" ~info:(info "my first commit") >>= fun () ->
     (* Get a/b/c *)
     Mem_store.get t ["a"; "b"; "c"] >|= fun s ->
     assert (s = "Hello, Irmin!")
@@ -104,7 +104,7 @@ let () = Lwt_main.run main
 let transaction_example =
 Mem_store.Repo.v config >>= Mem_store.master >>= fun t ->
 let info = Irmin_unix.info "example transaction" in
-Mem_store.with_tree t [] ~info ~strategy:`Set (fun tree ->
+Mem_store.with_tree_exn t [] ~info ~strategy:`Set (fun tree ->
     let tree = match tree with Some t -> t | None -> Mem_store.Tree.empty in
     Mem_store.Tree.remove tree ["foo"; "bar"] >>= fun tree ->
     Mem_store.Tree.add tree ["a"; "b"; "c"] "123" >>= fun tree ->
@@ -118,7 +118,7 @@ Here is an example `move` function to move files from one path to another:
 
 ```ocaml
 let move t ~src ~dest =
-    Mem_store.with_tree t Mem_store.Key.empty (fun tree ->
+    Mem_store.with_tree_exn t Mem_store.Key.empty ~strategy:`Set (fun tree ->
         match tree with
         | Some tr ->
             Mem_store.Tree.get_tree tr src >>= fun v ->

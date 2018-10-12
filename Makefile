@@ -19,6 +19,9 @@ check:
 run: check
 	./book.native
 
+clean:
+	rm -rf _build ./book.native
+
 publish: check
 	rm -rf .gh-pages
 	git clone `git config --get remote.origin.url` .gh-pages --reference .
