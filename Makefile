@@ -3,7 +3,7 @@ MDBOOK:=`which mdbook`
 
 build: check
 ifndef MDBOOK
-	echo "WARNING: mdBook not installed, not buildint HTML output"
+	echo "WARNING: mdBook not installed, not building HTML book output"
 else
 	mdbook build
 endif

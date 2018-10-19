@@ -12,8 +12,10 @@ A set of tutorials for getting started with [irmin](https://github.com/mirage/ir
 - [ocaml-hiredis](https://github.com/zshipko/ocaml-hiredis)
     - `opam install hiredis`
 - [mdBook](https://github.com/rust-lang-nursery/mdBook)
-    - required for buildint HTML output
+    - required for `make build`
     - `cargo install mdbook`
+- [omd](https://github.com/ocaml/omd)
+    - required for `make generate`
 
 ## Building
 
