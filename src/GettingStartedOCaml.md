@@ -187,7 +187,9 @@ let main =
 let () = Lwt_main.run main
 ```
 
-An interesting thing about `Json_value` stores is the ability to use [Json_tree](https://mirage.github.io/irmin/irmin/Irmin/index.html#module-Json_tree) to recursively project values onto a key. This means that using `Json_tree.set`, to assign `{"test": {"foo": "bar"}, "x": 1, "y": 2, "z": 3}` to the key `a/b/c` will set `a/b/c/x` to `1`, `a/b/c/y` to `2`, `a/b/c/z` to `3` and `a/b/c/test/foo` to `"bar"`. This allows for large JSON objects to be modified in pieces without having the encode/decode the entire thing to access specific fields. Using `Json_tree.get` we can also retrieve a tree as a JSON value. So if we call `Json_tree.get` with the key `a/b` we will get the following object back: `{"c": {"test": {"foo": "bar"}, "x": 1, "y": 2, "z": 3}}`.
+An interesting thing about `Json_value` stores is the ability to use [Json_tree](https://mirage.github.io/irmin/irmin/Irmin/index.html#module-Json_tree) to recursively project values onto a key. This means that using `Json_tree.set`, to assign `{"test": {"foo": "bar"}, "x": 1, "y": 2, "z": 3}` to the key `a/b/c` will set `a/b/c/x` to `1`, `a/b/c/y` to `2`, `a/b/c/z` to `3` and `a/b/c/test/foo` to `"bar"`.
+
+This allows for large JSON objects to be modified in pieces without having the encode/decode the entire thing to access specific fields. Using `Json_tree.get` we can also retrieve a tree as a JSON value. So if we call `Json_tree.get` with the key `a/b` we will get the following object back: `{"c": {"test": {"foo": "bar"}, "x": 1, "y": 2, "z": 3}}`.
 
 ```ocaml
 let main =
