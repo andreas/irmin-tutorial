@@ -160,3 +160,48 @@ let main =
     )
 let () = Lwt_main.run main
 ```
+
+## JSON Contents
+
+Most examples in this tutorial use string contents, so I will provide some further information about using JSON values.
+
+There are two types of JSON contents: [Json_value](https://mirage.github.io/irmin/irmin/Irmin/Contents/index.html#module-Json_value) and [Json](https://mirage.github.io/irmin/irmin/Irmin/Contents/index.html#module-Json), where `Json` can only store JSON objects and `Json_value` works with any JSON value.
+
+Setting up the store is exactly the same as when working with strings:
+
+```ocaml
+module Mem_store_json = Irmin_mem.KV(Irmin.Contents.Json)
+module Mem_store_json_value = Irmin_mem.KV(Irmin.Contents.Json_value)
+```
+
+For example, using `Men_store_json_value` we can assign `{"x": 1, "y": 2, "z": 3}` to the key `a/b/c`:
+
+```ocaml
+let main =
+    let module Store = Mem_store_json_value in
+    Store.Repo.v config >>= Store.master >>= fun t ->
+    let value = `O ["x", `Float 1.; "y", `Float 2.; "z", `Float 3.] in
+    Store.set_exn t ["a"; "b"; "c"] value ~info:(info "set a/b/c") >>= fun () ->
+    Store.get t ["a"; "b"; "c"] >|= fun x ->
+    assert (Irmin.Type.equal Store.contents_t value x)
+let () = Lwt_main.run main
+```
+
+An interesting thing about `Json_value` stores is the ability to use [Json_tree](https://mirage.github.io/irmin/irmin/Irmin/index.html#module-Json_tree) to recursively project values onto a key. This means that using `Json_tree.set`, to assign `{"test": {"foo": "bar"}, "x": 1, "y": 2, "z": 3}` to the key `a/b/c` will set `a/b/c/x` to `1`, `a/b/c/y` to `2`, `a/b/c/z` to `3` and `a/b/c/test/foo` to `"bar"`. This allows for large JSON objects to be modified in pieces without having the encode/decode the entire thing to access specific fields. Using `Json_tree.get` we can also retrieve a tree as a JSON value. So if we call `Json_tree.get` with the key `a/b` we will get the following object back: `{"c": {"test": {"foo": "bar"}, "x": 1, "y": 2, "z": 3}}`.
+
+```ocaml
+let main =
+    let module Store = Mem_store_json_value in
+    let module Proj = Irmin.Json_tree(Store) in
+    Store.Repo.v config >>= Store.master >>= fun t ->
+    let value = `O ["test", `O ["foo", `String "bar"]; "x", `Float 1.; "y", `Float 2.; "z", `Float 3.] in
+    Proj.set t ["a"; "b"; "c"] value ~info:(info "set a/b/c") >>= fun () ->
+    Store.get t ["a"; "b"; "c"; "x"] >>= fun x ->
+    assert (Irmin.Type.equal Store.contents_t (`Float 1.) x);
+    Store.get t ["a"; "b"; "c"; "test"; "foo"] >>= fun x ->
+    assert (Irmin.Type.equal Store.contents_t (`String "bar") x);
+    Proj.get t ["a"; "b"] >|= fun x ->
+    assert (Irmin.Type.equal Store.contents_t (`O ["c", value]) x)
+let () = Lwt_main.run main
+```
+
