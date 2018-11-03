@@ -14,6 +14,7 @@ check:
 	$(MDX_PATH) pp src/UsingTheCommandLine.md >> src/book.ml
 	$(MDX_PATH) pp src/GettingStartedOCaml.md >> src/book.ml
 	$(MDX_PATH) pp src/Backend.md  >> src/book.ml
+	$(MDX_PATH) pp src/GraphQL.md >> src/book.ml
 	ocamlbuild -pkg irmin-unix -pkg hiredis src/book.native
 
 run: check
