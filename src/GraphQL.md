@@ -117,7 +117,7 @@ query {
 Using `irmin-js` the same query would be written as:
 
 ```javascript
-let ir = new Irmin("http://localhost:8080");
+let ir = new Irmin("http://localhost:8080/graphql");
 ir.master().get("abc").then((res) => {
     ...
 });
@@ -126,7 +126,7 @@ ir.master().get("abc").then((res) => {
 `irmin-js` can also be used to send raw queries to the server:
 
 ```javascript
-let ir = new Irmin("http://localhost:8080");
+let ir = new Irmin("http://localhost:8080/graphql");
 ir.execute({
     body: "query { master { get(key: "abc") } }",
     variables: {}
