@@ -20,6 +20,10 @@ $ irmin graphql --port 8080
 
 This will start the server on `localhost:8080`. By default `irmin-graphql` provides an GraphiQL editor for writing queries from within the brower which can be accessed at [http://localhost:8080/graphql](http://localhost:8080/graphql)
 
+## Available clients
+
+[irmin-js](https://github.com/zshipko/irmin-js) and [irmin-go](https://github.com/zshipko/irmin-go) serve as the reference client implementations in Javascript and Go. In addition to providing many basic queries by default, they also simplify the process of executing handwritten queries.
+
 ## Schema
 
 Using the GraphiQL web interface you can explore the schema using the **Docs** button in the upper-right corner. Additionally, there are tools like [https://github.com/prisma/get-graphql-schema](get-graphql-schema) which will dump the entire schema for you.
@@ -93,6 +97,7 @@ type query {
   commit(hash: CommitHash!): Commit
   master: Branch
   branch(name: BranchName!): Branch
+  branches: [String!]!
 }
 
 scalar Remote
@@ -186,3 +191,5 @@ mutation {
     }
 }
 ```
+
+ 
