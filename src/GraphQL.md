@@ -145,7 +145,7 @@ If we were interested in the same key on a different branch then the query will 
 ```graphql
 query {
     branch(name: "my-branch") {
-    	get(key: "abc")
+    	get(key: "a/b/c")
     }
 }
 ```
@@ -172,13 +172,13 @@ For example, setting a key is easy:
 
 ```graphql
 mutation {
-    set(branch: null, key: "abc", value: "123", info: null) {
+    set(branch: null, key: "a/b/c", value: "123", info: null) {
         hash
     }
 }
 ```
 
-The example above sets the key "abc" to "123" and returns the new commit's hash.
+The example above sets the key "a/b/c" (`["a"; "b"; "c"]` in OCaml) to "123" and returns the new commit's hash.
 
 ## Sync
 
@@ -191,5 +191,3 @@ mutation {
     }
 }
 ```
-
- 
