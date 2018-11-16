@@ -28,85 +28,6 @@ This will start the server on `localhost:8080`. By default `irmin-graphql` provi
 
 Using the GraphiQL web interface you can explore the schema using the **Docs** button in the upper-right corner. Additionally, there are tools like [https://github.com/prisma/get-graphql-schema](get-graphql-schema) which will dump the entire schema for you.
 
-Currently, the GraphQL schema looks like this:
-
-```graphql
-schema {
-  query: query
-  mutation: mutation
-}
-
-type Branch {
-  name: String!
-  head: Commit
-  get(key: Key!): String
-  get_all(key: Key!): Contents
-  lca(commit: CommitHash!): [Commit!]!
-}
-
-scalar BranchName
-
-type Commit {
-  node: Node!
-  parents: [Commit!]!
-  info: Info!
-  hash: String!
-}
-
-scalar CommitHash
-
-type Contents {
-  key: String!
-  metadata: String
-  value: String
-}
-
-type Info {
-  date: String!
-  author: String!
-  message: String!
-}
-
-input InfoInput {
-  message: String
-  author: String
-}
-
-scalar Key
-
-type mutation {
-  set(info: InfoInput, value: String!, key: String!, branch: BranchName): Commit
-  set_all(info: InfoInput, metadata: String, value: String!, key: String!, branch: BranchName): Commit
-  remove(info: InfoInput, key: String!, branch: BranchName): Commit
-  merge(info: InfoInput, from: BranchName!, branch: BranchName): Commit
-  revert(commit: CommitHash!, branch: BranchName): Commit
-  clone(remote: Remote!, branch: BranchName): Commit!
-  push(remote: Remote!, branch: BranchName): String
-  pull(remote: Remote!, branch: BranchName): Commit
-}
-
-type Node {
-  key: String!
-  get(key: Step): Node
-  value: String
-  metadata: String
-  tree: [Tree!]!
-}
-
-type query {
-  commit(hash: CommitHash!): Commit
-  master: Branch
-  branch(name: BranchName!): Branch
-  branches: [String!]!
-}
-
-scalar Remote
-
-scalar Step
-
-union Tree = Contents | Node
-```
-
 ## Writing queries
 
 To start off we will compose a query to retrieve the value stored at the key `abc`:
@@ -140,7 +61,7 @@ ir.execute({
 });
 ```
 
-If we were interested in the same key on a different branch then the query will look something like this:
+If we were interested in the same key on a different branch then the query would look something like this:
 
 ```graphql
 query {
@@ -178,9 +99,21 @@ mutation {
 }
 ```
 
-The example above sets the key "a/b/c" (`["a"; "b"; "c"]` in OCaml) to "123" and returns the new commit's hash.
+The example above sets the key `a/b/c` (`["a"; "b"; "c"]` in OCaml) to `123` and returns the new commit's hash.
 
-## Sync
+It's also possible to update multiple keys at the same time:
+
+```graphql
+mutation {
+    set_tree(key: "foo", tree: [{key: "bar", value: "a"}, {key: "baz", value: "b"}, {key: "c", value: null}]) {
+        hash
+    }
+}
+```
+
+This will set `foo/bar` to `a`, `foo/baz` to `b` and remove `a/b/c`.
+
+### Sync
 
 `clone`, `push` and `pull` are also supported! This means that you're able to sync with remote stores using simple mutations:
 
