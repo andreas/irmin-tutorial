@@ -22,94 +22,22 @@ This will start the server on `localhost:8080`. By default `irmin-graphql` provi
 
 ## Available clients
 
-[irmin-js](https://github.com/zshipko/irmin-js) and [irmin-go](https://github.com/zshipko/irmin-go) serve as the reference client implementations in Javascript and Go. In addition to providing many basic queries by default, they also simplify the process of executing handwritten queries.
+There are several reference client implementations provide many basic queries by default, in addition to simplifying the process of executing handwritten queries.
+
+- [irmin-js](https://github.com/zshipko/irmin-js)
+- [irmin-go](https://github.com/zshipko/irmin-go)
 
 ## Schema
 
 Using the GraphiQL web interface you can explore the schema using the **Docs** button in the upper-right corner. Additionally, there are tools like [https://github.com/prisma/get-graphql-schema](get-graphql-schema) which will dump the entire schema for you.
 
-Currently, the GraphQL schema looks like this:
+## Queries
 
-```graphql
-schema {
-  query: query
-  mutation: mutation
-}
+Using `irmin-graphql` it is possible to collect information about Irmin databases and (Git repositories) using GraphQL.
 
-type Branch {
-  name: String!
-  head: Commit
-  get(key: Key!): String
-  get_all(key: Key!): Contents
-  lca(commit: CommitHash!): [Commit!]!
-}
+### Get
 
-scalar BranchName
-
-type Commit {
-  node: Node!
-  parents: [Commit!]!
-  info: Info!
-  hash: String!
-}
-
-scalar CommitHash
-
-type Contents {
-  key: String!
-  metadata: String
-  value: String
-}
-
-type Info {
-  date: String!
-  author: String!
-  message: String!
-}
-
-input InfoInput {
-  message: String
-  author: String
-}
-
-scalar Key
-
-type mutation {
-  set(info: InfoInput, value: String!, key: String!, branch: BranchName): Commit
-  set_all(info: InfoInput, metadata: String, value: String!, key: String!, branch: BranchName): Commit
-  remove(info: InfoInput, key: String!, branch: BranchName): Commit
-  merge(info: InfoInput, from: BranchName!, branch: BranchName): Commit
-  revert(commit: CommitHash!, branch: BranchName): Commit
-  clone(remote: Remote!, branch: BranchName): Commit!
-  push(remote: Remote!, branch: BranchName): String
-  pull(remote: Remote!, branch: BranchName): Commit
-}
-
-type Node {
-  key: String!
-  get(key: Step): Node
-  value: String
-  metadata: String
-  tree: [Tree!]!
-}
-
-type query {
-  commit(hash: CommitHash!): Commit
-  master: Branch
-  branch(name: BranchName!): Branch
-  branches: [String!]!
-}
-
-scalar Remote
-
-scalar Step
-
-union Tree = Contents | Node
-```
-
-## Writing queries
-
-To start off we will compose a query to retrieve the value stored at the key `abc`:
+To start off we will create a query to retrieve the value stored at the path `abc`:
 
 ```graphql
 query {
@@ -128,7 +56,7 @@ ir.master().get("abc").then((res) => {
 });
 ```
 
-`irmin-js` can also be used to send raw queries to the server:
+**NOTE**: `irmin-js` can also be used to send execute raw queries:
 
 ```javascript
 let ir = new Irmin("http://localhost:8080/graphql");
@@ -140,7 +68,7 @@ ir.execute({
 });
 ```
 
-If we were interested in the same key on a different branch then the query will look something like this:
+The following would accomplish the same thing in `my-branch`:
 
 ```graphql
 query {
@@ -149,6 +77,8 @@ query {
     }
 }
 ```
+
+### Branch info
 
 Using `master`/`branch` queries we are able to find lots of information about the attached Irmin store:
 
@@ -166,7 +96,9 @@ query {
 
 ## Mutations
 
-`irmin-graphql` also supports mutations, which are queries that are able to modify data.
+`irmin-graphql` also supports mutations, which are basically queries with side-effects.
+
+### Set
 
 For example, setting a key is easy:
 
@@ -180,9 +112,9 @@ mutation {
 
 The example above sets the key "a/b/c" (`["a"; "b"; "c"]` in OCaml) to "123" and returns the new commit's hash.
 
-## Sync
+### Sync
 
-`clone`, `push` and `pull` are also supported! This means that you're able to sync with remote stores using simple mutations:
+`clone`, `push` and `pull` are also supported! This allows data to be synchronized accross servers using a simple mutation:
 
 ```graphql
 mutation {
