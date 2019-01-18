@@ -183,7 +183,7 @@ let get_value() =
     }
   |} >|= function
   | Ok j ->
-    (match Irmin_graphql.Client.Json.find j ["master"; "get"] with
+    (match Irmin_graphql.Client.Json.find j ["data"; "master"; "get"] with
     | Some x -> Ok x
     | None -> Error (`Msg "invalid response"))
   | Error (`Msg msg) -> Error (`Msg msg)
