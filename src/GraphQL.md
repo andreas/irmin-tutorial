@@ -123,3 +123,69 @@ mutation {
     }
 }
 ```
+
+## GraphQL servers in OCaml
+
+It is also possible to use the `irmin-graphql` OCaml interface to embed a GraphQL server in any application!
+
+Using `Irmin_unix.Graphql.Server.Make` you can convert an existing `Irmin.S` typed module into a GraphQL server:
+
+```ocaml
+module Graphql_store = Irmin_unix.Git.Mem.KV(Irmin.Contents.String)
+module Graphql = Irmin_unix.Graphql.Server.Make(Graphql_store)(struct let remote = Some Graphql_store.remote end)
+```
+
+The following code will initialize and run the server:
+
+```ocaml
+let run_server () =
+  (* Set up the Irmin store *)
+  Graphql_store.Repo.v (Irmin_git.config "/tmp/irmin")
+  >>= Graphql_store.master >>= fun store ->
+
+  (* Initialize the GraphQL server *)
+  let server = Graphql.server store in
+
+  (* Run the server *)
+  let on_exn exn =
+    Logs.debug (fun l -> l "on_exn: %s" (Printexc.to_string exn))
+  in
+  Cohttp_lwt_unix.Server.create ~on_exn ~mode:(`TCP (`Port 1234)) server
+```
+
+## Using the OCaml GraphQL client
+
+`irmin-graphql` also provides a GraphQL client. Using `Irmin_unix.Graphql.Client.Make` it is very easy to connect to an Irmin GraphQL server and start making queries!
+
+```ocaml
+module Graphql_client = Irmin_unix.Graphql.Client.Make(Graphql_store)
+let client = Graphql_client.init (Uri.of_string "http://localhost:1234")
+```
+
+Once you're client is set up, you can execute the a built-in query:
+
+```ocaml
+let get_value () =
+  Graphql_client.get client ["testing"] >>= function
+  | Ok v -> Lwt_io.printl v
+  | Error (`Msg msg) -> failwith msg
+```
+
+Or run your own custom queries using `execute`/`execute_json`:
+
+```ocaml
+let get_value() =
+  Graphql_client.execute_json client {|
+    query {
+      master {
+        get(key: "testing")
+      }
+    }
+  |} >|= function
+  | Ok j ->
+    (match Irmin_graphql.Client.Json.find j ["master"; "get"] with
+    | Some x -> Ok x
+    | None -> Error (`Msg "invalid response"))
+  | Error (`Msg msg) -> Error (`Msg msg)
+```
+
