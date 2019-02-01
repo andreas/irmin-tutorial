@@ -155,11 +155,19 @@ let run_server () =
 
 ## Using the OCaml GraphQL client
 
-`irmin-graphql` also provides a GraphQL client. Using `Irmin_unix.Graphql.Client.Make` it is very easy to connect to an Irmin GraphQL server and start making queries!
+`irmin-graphql` also provides a GraphQL client. This makes it very easy to connect to an Irmin GraphQL server and start making queries! In this example I will show you how to create and use an `Irmin_graphql.Client.EXT` client, however it is also possible make a client that matches `Irmin.S` using `Irmin_graphql.Client.Make`.
 
 ```ocaml
-module Graphql_client = Irmin_unix.Graphql.Client.Make(Graphql_store)
-let client = Graphql_client.init (Uri.of_string "http://localhost:1234")
+module Graphql_client =
+  Irmin_graphql.Client.Make_ext
+    (Cohttp_lwt_unix.Client)
+    (Graphql_store.Metadata)
+    (Irmin.Contents.String)
+    (Irmin.Path.String_list)
+    (Irmin.Branch.String)
+    (Irmin.Hash.SHA1)
+
+let client = Graphql_client.v (Uri.of_string "http://localhost:1234")
 ```
 
 Once you're client is set up, you can execute the a built-in query:

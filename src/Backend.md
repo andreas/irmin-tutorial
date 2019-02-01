@@ -2,7 +2,7 @@
 
 This section illustrates how to write a custom storage backend for Irmin using a simplified implementation of [irmin-redis](https://github.com/zshipko/irmin-redis) as an example. `irmin-redis` uses a Redis server to store Irmin data.
 
-Unlike writing a [custom datatype](Contents.html), there is not a tidy way of doing this. Each backend must fulfill certain criteria as defined by [Irmin.AO_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-AO_MAKER/index.html), [Irmin.LINK_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-LINK_MAKER/index.html), [Irmin.RW_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-RW_MAKER/index.html), [Irmin.S_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-S_MAKER/index.html), and [Irmin.KV_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-KV_MAKER/index.html). These module types define interfaces for functors that create stores. For example, a `KV_MAKER` defines a module that takes an `Irmin.Contents.S` as a parameter and returns a module of type `Irmin.KV`.
+Unlike writing a [custom datatype](Contents.html), there is not a tidy way of doing this. Each backend must fulfill certain criteria as defined by [Irmin.CONTENT_ADDRESSABLE_STORE_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-CONTENT_ADDRESSABLE_STORE_MAKER/index.html), [Irmin.ATOMIC_WRITE_STORE_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-ATOMIC_WRITE_STORE_MAKER/index.html), [Irmin.S_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-S_MAKER/index.html), and [Irmin.KV_MAKER](https://mirage.github.io/irmin/irmin/Irmin/module-type-KV_MAKER/index.html). These module types define interfaces for functors that create stores. For example, a `KV_MAKER` defines a module that takes an `Irmin.Contents.S` as a parameter and returns a module of type `Irmin.KV`.
 
 ## Redis client
 
@@ -10,9 +10,8 @@ This examples uses the [hiredis](https://github.com/zshipko/ocaml-hiredis) packa
 
 ## The readonly store
 
-The process for writing a backend for Irmin requires implementing a few functors. First off, the ([RO](https://mirage.github.io/irmin/irmin/Irmin/module-type-RO/index.html)) store.
+The process for writing a backend for Irmin requires implementing a few functors - the accomplish this, we can start of by writing a helper module that provides an generic implementation that can be re-used by the content-adressable store and the atomic-write store:
 
-The [RO](https://mirage.github.io/irmin/irmin/Irmin/module-type-RO/index.html) module type requires the following types to be defined:
 
 - `t`: The store type
 - `key`: The key type
@@ -24,8 +23,8 @@ open Hiredis
 ```
 
 ```ocaml
-module RO (K: Irmin.Type.S) (V: Irmin.Type.S) = struct
-  type t = (string * Client.t) (* Store type: Redis prefix and client *)
+module Helper (K: Irmin.Type.S) (V: Irmin.Type.S) = struct
+  type 'a t = (string * Client.t) (* Store type: Redis prefix and client *)
   type key = K.t               (* Key type *)
   type value = V.t             (* Value type *)
 ```
@@ -73,13 +72,13 @@ Since an Irmin database requires a few levels of store types (links, objects, et
 end
 ```
 
-### The append-only store
+### The content-adressable store
 
-Next is the append-only ([AO](https://mirage.github.io/irmin/irmin/Irmin/module-type-AO/index.html)) interface - the majority of the required methods can be inherited from `RO`!
+Next is the content-adressable ([CONTENT_ADDRESSABLE_STORE](https://mirage.github.io/irmin/irmin/Irmin/module-type-CONTENT_ADDRESSABLE_STORE/index.html)) interface - the majority of the required methods can be inherited from `Helper`!
 
 ```ocaml
-module AO (K: Irmin.Hash.S) (V: Irmin.Type.S) = struct
-  include RO(K)(V)
+module Content_adressable (K: Irmin.Hash.S) (V: Irmin.Type.S) = struct
+  include Helper(K)(V)
   let v = v "obj"
 ```
 
@@ -92,27 +91,33 @@ This module needs an `add` function, which takes a value, hashes it, stores the 
       let value = Irmin.Type.to_string V.t value in
       ignore (Client.run client [| "SET"; prefix ^ key; value |]);
       Lwt.return hash
+```
+
+Then a `batch` function, which can be used to group writes together. We will use the most basic implementation:
+
+```ocaml
+  let batch t f = f t
 end
 ```
 
-## The read-write store
+## The atomic-write store
 
-The [RW](https://mirage.github.io/irmin/irmin/Irmin/module-type-RW/index.html) store has many more types and values that need to be defined than the previous examples, but luckily this is the last step!
+The [ATOMIC_WRITE_STORE](https://mirage.github.io/irmin/irmin/Irmin/module-type-ATOMIC_WRITE_STORE/index.html) has many more types and values that need to be defined than the previous examples, but luckily this is the last step!
 
-To start off we can use the `RO` functor defined above to create a `RO` module:
+To start off we can use the `Helper` functor defined above:
 
 ```ocaml
-module RW (K: Irmin.Type.S) (V: Irmin.Type.S) = struct
-  module RO = RO(K)(V)
+module Atomic_write (K: Irmin.Type.S) (V: Irmin.Type.S) = struct
+  module H = Helper(K)(V)
 ```
 
-There are a few types we need to declare next. `key` and `value` should match `RO.key` and `RO.value` and `watch` is used to declare the type of the watcher -- this is used to send notifications when the store has been updated. [irmin-watcher](https://github.com/mirage/irmin-watcher) has some more information on watchers.
+There are a few types we need to declare next. `key` and `value` should match `H.key` and `H.value` and `watch` is used to declare the type of the watcher -- this is used to send notifications when the store has been updated. [irmin-watcher](https://github.com/mirage/irmin-watcher) has some more information on watchers.
 
 ```ocaml
   module W = Irmin.Private.Watch.Make(K)(V)
-  type t = { t: RO.t; w: W.t }  (* Store type *)
-  type key = RO.key             (* Key type *)
-  type value = RO.value         (* Value type *)
+  type t = { t: [`Write] H.t; w: W.t }  (* Store type *)
+  type key = H.key             (* Key type *)
+  type value = H.value         (* Value type *)
   type watch = W.watch          (* Watch type *)
 ```
 
@@ -126,15 +131,15 @@ Again, we need a `v` function for creating a value of type `t`:
 
 ```ocaml
   let v config =
-    RO.v "data" config >>= fun t ->
+    H.v "data" config >>= fun t ->
     Lwt.return {t; w = watches }
 ```
 
-The next few functions (`find` and `mem`) are just wrappers around the implementations in `RO`:
+The next few functions (`find` and `mem`) are just wrappers around the implementations in `H`:
 
 ```ocaml
-  let find t = RO.find t.t
-  let mem t  = RO.mem t.t
+  let find t = H.find t.t
+  let mem t  = H.mem t.t
 ```
 
 A few more simple functions: `watch_key`, `watch` and `unwatch`, used to created or destroy watches:
@@ -232,7 +237,7 @@ end
 Finally, add `Make` and `KV` functors for creating Redis-backed Irmin stores:
 
 ```ocaml
-module Make: Irmin.S_MAKER = Irmin.Make(AO)(RW)
+module Make: Irmin.S_MAKER = Irmin.Make(Content_adressable)(Atomic_write)
 
 module KV: Irmin.KV_MAKER = functor (C: Irmin.Contents.S) ->
   Make
