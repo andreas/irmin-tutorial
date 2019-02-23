@@ -96,7 +96,11 @@ This module needs an `add` function, which takes a value, hashes it, stores the 
 Then a `batch` function, which can be used to group writes together. We will use the most basic implementation:
 
 ```ocaml
-  let batch t f = f t
+  let batch (prefix, client) f =
+    let _ = Client.run client ["MULTI"] in
+    f (prefix, client) >|= fun result ->
+    let _ = Client.run client ["EXEC"] in
+    result
 end
 ```
 
