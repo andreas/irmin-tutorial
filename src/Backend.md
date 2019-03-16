@@ -97,9 +97,9 @@ Then a `batch` function, which can be used to group writes together. We will use
 
 ```ocaml
   let batch (prefix, client) f =
-    let _ = Client.run client ["MULTI"] in
+    let _ = Client.run client [| "MULTI" |] in
     f (prefix, client) >|= fun result ->
-    let _ = Client.run client ["EXEC"] in
+    let _ = Client.run client [| "EXEC" |] in
     result
 end
 ```

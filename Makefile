@@ -1,4 +1,4 @@
-MDX_PATH=mdx
+MDX_PATH=ocaml-mdx
 MDBOOK:=`which mdbook`
 
 build: check

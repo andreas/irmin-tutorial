@@ -140,11 +140,10 @@ The following code will initialize and run the server:
 ```ocaml
 let run_server () =
   (* Set up the Irmin store *)
-  Graphql_store.Repo.v (Irmin_git.config "/tmp/irmin")
-  >>= Graphql_store.master >>= fun store ->
+  Graphql_store.Repo.v (Irmin_git.config "/tmp/irmin") >>= fun repo ->
 
   (* Initialize the GraphQL server *)
-  let server = Graphql.server store in
+  let server = Graphql.v repo in
 
   (* Run the server *)
   let on_exn exn =
@@ -158,35 +157,24 @@ let run_server () =
 `irmin-graphql` also provides a GraphQL client. This makes it very easy to connect to an Irmin GraphQL server and start making queries!
 
 ```ocaml
-module Graphql_client = Irmin_graphql.Client.Make(Graphql_store)
+module Graphql_client = Irmin_graphql.Client.Make_client(Cohttp_lwt_unix.Client)(Irmin.Branch.String)(Irmin.Hash.SHA1)
 
-let client = Graphql_client.init (Uri.of_string "http://localhost:1234")
+let client = Graphql_client.v (Uri.of_string "http://localhost:1234")
 ```
 
-Once you're client is set up, you can execute the a built-in query:
+Now you're able to run custom queries using `execute`/`execute_json`:
 
 ```ocaml
 let get_value () =
-  Graphql_client.get client ["testing"] >>= function
-  | Ok v -> Lwt_io.printl v
-  | Error (`Msg msg) -> failwith msg
-```
-
-Or run your own custom queries using `execute`/`execute_json`:
-
-```ocaml
-let get_value() =
-  Graphql_client.execute_json client {|
+  let query = {|
     query {
       master {
         get(key: "testing")
       }
     }
-  |} >|= function
-  | Ok j ->
-    (match Irmin_graphql.Client.Json.find j ["data"; "master"; "get"] with
-    | Some x -> Ok x
-    | None -> Error (`Msg "invalid response"))
-  | Error (`Msg msg) -> Error (`Msg msg)
+  |} in
+  Graphql_client.execute_json client query ["data"; "master"; "get"]  >|= function
+  | Some x -> Ok x
+  | None -> Error (`Msg "invalid response")
 ```
 
