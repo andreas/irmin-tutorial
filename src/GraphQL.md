@@ -151,30 +151,3 @@ let run_server () =
   in
   Cohttp_lwt_unix.Server.create ~on_exn ~mode:(`TCP (`Port 1234)) server
 ```
-
-## Using the OCaml GraphQL client
-
-`irmin-graphql` also provides a GraphQL client. This makes it very easy to connect to an Irmin GraphQL server and start making queries!
-
-```ocaml
-module Graphql_client = Irmin_graphql.Client.Make_client(Cohttp_lwt_unix.Client)(Irmin.Branch.String)(Irmin.Hash.SHA1)
-
-let client = Graphql_client.v (Uri.of_string "http://localhost:1234")
-```
-
-Now you're able to run custom queries using `execute`/`execute_json`:
-
-```ocaml
-let get_value () =
-  let query = {|
-    query {
-      master {
-        get(key: "testing")
-      }
-    }
-  |} in
-  Graphql_client.execute_json client query ["data"; "master"; "get"]  >|= function
-  | Some x -> Ok x
-  | None -> Error (`Msg "invalid response")
-```
-
