@@ -254,7 +254,7 @@ module Lww_register (Time: TIMESTAMP) (C: Irmin.Type.S) = struct
     let t =
         Irmin.Type.(pair C.t int64)
 ```
-A convenience function for adding a timestamp to [C.t] value:
+A convenience function for adding a timestamp to a `C.t` value:
 
 ```ocaml
     let v c = (c, Time.now ())
