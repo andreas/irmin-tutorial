@@ -104,7 +104,7 @@ For example, setting a key is easy:
 
 ```graphql
 mutation {
-    set(branch: null, key: "a/b/c", value: "123", info: null) {
+    set(key: "a/b/c", value: "123") {
         hash
     }
 }
@@ -118,7 +118,7 @@ The example above sets the key "a/b/c" (`["a"; "b"; "c"]` in OCaml) to "123" and
 
 ```graphql
 mutation {
-    pull(remote: "git://github.com/mirage/irmin", branch: null) {
+    pull(remote: "git://github.com/mirage/irmin") {
         hash
     }
 }
