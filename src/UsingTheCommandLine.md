@@ -71,8 +71,14 @@ See the output of `irmin help irmin.yml` for a list of configurable parameters.
 $ irmin graphql --port 8080
 ```
 
-Then visit [http://localhost:8080/graphql](http://localhost:8080/graphql) for an interactive environment for writing GraphQL queries. Of course, you're also free to use your GraphQL client of choice!
+To verify the GraphQL server is up and running, you can try the following query:
 
+```shell
+$ curl http://localhost:8080/graphql -d '{"query": "query { master { head { hash } } }"}'
+{"data":{"master":{"head":{"hash":"2a16cd7d8e27d134e6194140617d25d977441396"}}}}
+```
+
+You can also visit [http://localhost:8080/graphql](http://localhost:8080/graphql) for an interactive environment for writing GraphQL queries. Of course, you're also free to use your GraphQL client of choice!
 
 ## Snapshot/revert
 
