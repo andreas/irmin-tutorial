@@ -29,7 +29,7 @@ There are several reference client implementations provide many basic queries by
 
 ## Schema
 
-Using the GraphiQL web interface you can explore the schema using the **Docs** button in the upper-right corner. Additionally, there are tools like [https://github.com/prisma/get-graphql-schema](get-graphql-schema) which will dump the entire schema for you.
+Using the GraphiQL web interface you can explore the schema using the **Docs** button in the upper-right corner. Additionally, there are tools like [`get-graphql-schema`](https://github.com/prisma/get-graphql-schema) which will dump the entire schema for you.
 
 ## Queries
 
