@@ -82,6 +82,29 @@ query {
 }
 ```
 
+It's also possible to set or update multiple keys using the `set_tree` and `update_tree` mutations. The following will set `/a` to "foo" and `/b` to "bar":
+
+```graphql
+mutation {
+  set_tree(key: "/", tree: [{key: "a", value: "foo"}, {key: "b", value:"bar"}]){
+    hash
+  }
+}
+```
+
+And updating multiple keys is similar:
+
+```graphql
+mutation {
+  update_tree(key: "/", tree: [{key: "a", value: "testing"}, {key: "b", value: null}]){
+    hash
+  }
+}
+```
+
+this will set `a` to "testing" and remove the value associated with `b`.
+
+
 ### Branch info
 
 Using `master`/`branch` queries we are able to find lots of information about the attached Irmin store:
