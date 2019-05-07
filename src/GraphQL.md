@@ -18,7 +18,7 @@ To start the GraphQL server:
 $ irmin graphql --port 8080
 ```
 
-This will start the server on `localhost:8080`. By default `irmin-graphql` provides an GraphiQL editor for writing queries from within the brower which can be accessed at [http://localhost:8080/graphql](http://localhost:8080/graphql)
+This will start the server on `localhost:8080` - this can be customized using the `--address` and `--port` flags. By default `irmin-graphql` provides an GraphiQL editor for writing queries from within the brower which can be accessed at [http://localhost:8080/graphql](http://localhost:8080/graphql)
 
 ## Available clients
 
@@ -42,7 +42,9 @@ To start off we will create a query to retrieve the value stored at the path `ab
 ```graphql
 query {
     master {
+      tree {
         get(key: "abc")
+      }
     }
 }
 ```
@@ -61,7 +63,7 @@ ir.master().get("abc").then((res) => {
 ```javascript
 let ir = new Irmin("http://localhost:8080/graphql");
 ir.execute({
-    body: "query { master { get(key: "abc") } }",
+    body: "query { master { tree { get(key: "abc") } } }",
     variables: {}
 }).then((res) => {
     ...
@@ -73,7 +75,9 @@ The following would accomplish the same thing in `my-branch`:
 ```graphql
 query {
     branch(name: "my-branch") {
-    	get(key: "a/b/c")
+      tree {
+    	  get(key: "a/b/c")
+      }
     }
 }
 ```
@@ -114,7 +118,7 @@ The example above sets the key "a/b/c" (`["a"; "b"; "c"]` in OCaml) to "123" and
 
 ### Sync
 
-`clone`, `push` and `pull` are also supported! This allows data to be synchronized accross servers using a simple mutation:
+`clone`, `push` and `pull` are also supported as long as they're supported by the underlying store! This allows data to be synchronized accross servers using a simple mutation:
 
 ```graphql
 mutation {
