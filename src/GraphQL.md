@@ -178,3 +178,74 @@ let run_server () =
   in
   Cohttp_lwt_unix.Server.create ~on_exn ~mode:(`TCP (`Port 1234)) server
 ```
+
+### Customization
+
+It is possible to use a custom JSON representation for `contents` and `metadata`
+values by implementing `Irmin_graphql.Server.PRESENTER`:
+
+```ocaml
+module Example_type = struct
+  type t = {x: string; y: string; z: string}
+  let t =
+    let open Irmin.Type in
+    record "Example_type" (fun x y z -> {x; y; z})
+    |+ field "x" string (fun t -> t.x)
+    |+ field "y" string (fun t -> t.y)
+    |+ field "z" string (fun t -> t.z)
+    |> sealr
+  let merge = Irmin.Merge.(option (default t))
+end
+
+module Example_presenter = struct
+  type t = Example_type.t
+  type src = Example_type.t
+  let to_src t = t
+  let schema_typ =
+    let open Example_type in
+    Irmin_graphql.Server.Schema.(obj "Example"
+      ~fields:(fun _ -> [
+        field "x"
+          ~typ:(non_null string)
+          ~args:[]
+          ~resolve:(fun _ t -> t.x)
+        ;
+        field "y"
+          ~typ:(non_null string)
+          ~args:[]
+          ~resolve:(fun _ t -> t.y)
+        ;
+        field "z"
+          ~typ:(non_null string)
+          ~args:[]
+          ~resolve:(fun _ t -> t.z)
+        ;
+      ])
+    )
+end
+```
+
+(You may also opt to use `Irmin_graphql.Server.Default_presenter`, which can be used on any `Irmin.Type.S`)
+
+Once you've done this for both the `contents` and `metadata` types you need to wrap them in `Irmin_graphql.Server.PRESENTATION` before passing them to `Irmin_graphql.Server.Make_ext`:
+
+```ocaml
+module Example_store = Irmin_mem.KV(Example_type)
+
+module Presentation = struct
+  module Contents = Example_presenter
+  module Metadata = Irmin_graphql.Server.Default_presenter(Example_store.Metadata)
+end
+
+module Config = struct
+  let remote = None
+  let info = Irmin_unix.info
+end
+
+module Graphql_ext =
+  Irmin_graphql.Server.Make_ext
+    (Cohttp_lwt_unix.Server)
+    (Config)
+    (Example_store)
+    (Presentation)
+```
