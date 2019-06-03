@@ -200,7 +200,7 @@ end
 module Example_presenter = struct
   type t = Example_type.t
   type src = Example_type.t
-  let to_src t = t
+  let to_src _tree _key t = t
   let schema_typ =
     let open Example_type in
     Irmin_graphql.Server.Schema.(obj "Example"
@@ -225,7 +225,7 @@ module Example_presenter = struct
 end
 ```
 
-(You may also opt to use `Irmin_graphql.Server.Default_presenter`, which can be used on any `Irmin.Type.S`)
+(You may also opt to use `Irmin_graphql.Server.Default_presentation`, which can be used on any `Irmin.Type.S`)
 
 Once you've done this for both the `contents` and `metadata` types you need to wrap them in `Irmin_graphql.Server.PRESENTATION` before passing them to `Irmin_graphql.Server.Make_ext`:
 
@@ -233,8 +233,9 @@ Once you've done this for both the `contents` and `metadata` types you need to w
 module Example_store = Irmin_mem.KV(Example_type)
 
 module Presentation = struct
+  module Default = Irmin_graphql.Server.Default_presentation(Example_store)
+  module Metadata = Default.Metadata
   module Contents = Example_presenter
-  module Metadata = Irmin_graphql.Server.Default_presenter(Example_store.Metadata)
 end
 
 module Config = struct

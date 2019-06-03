@@ -152,7 +152,7 @@ module Sync = Irmin.Sync(Git_mem_store)
 let remote = Git_mem_store.remote "git://github.com/mirage/irmin.git"
 let main =
     Git_mem_store.Repo.v config >>= Git_mem_store.master >>= fun t ->
-    Sync.pull_exn t remote `Set >>= fun () ->
+    Sync.pull_exn t remote `Set >>= fun _ ->
     Git_mem_store.list t [] >|= List.iter (fun (step, kind) ->
         match kind with
         | `Contents -> Printf.printf "FILE %s\n" step
